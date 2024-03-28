@@ -123,6 +123,7 @@ app.put('/supplier/:id', (req, res) => {
     });
 });
 
+// Endpoint to get all employees
 app.get('/employee', (req, res) => {
     const query = 'SELECT * FROM employee';
     db.query(query, (err, result) => {
@@ -133,8 +134,103 @@ app.get('/employee', (req, res) => {
             res.status(200).json(result.rows);
         }
     });
-}
-);
+});
+
+// Endpoint to get all suppliers
+app.get('/supplier', (req, res) => {
+    const query = 'SELECT * FROM supplier';
+    db.query(query, (err, result) => {
+        if (err) {
+            console.error('Error executing query:', err);
+            res.status(500).json({ error: 'Error fetching suppliers' });
+        } else {
+            res.status(200).json(result.rows);
+        }
+    });
+});
+
+// Endpoint to create a new item in the stock
+app.post('/stock', (req, res) => {
+    const { productid, name, cost, category, supplier_name } = req.body;
+    const query = 'INSERT INTO stock (productid, name, cost, category, supplier_name) VALUES ($1, $2, $3, $4, $5) RETURNING *';
+    db.query(query, [productid, name, cost, category, supplier_name], (err, result) => {
+        if (err) {
+            console.error('Error executing query:', err);
+            res.status(500).json({ error: 'Error creating item in stock' });
+        } else {
+            res.status(201).json(result.rows[0]);
+        }
+    });
+});
+
+// Endpoint to get all items from the stock
+app.get('/stock', (req, res) => {
+    const query = 'SELECT * FROM stock';
+    db.query(query, (err, result) => {
+        if (err) {
+            console.error('Error executing query:', err);
+            res.status(500).json({ error: 'Error fetching items from stock' });
+        } else {
+            res.status(200).json(result.rows);
+        }
+    });
+});
+
+// Endpoint to get a single item from the stock by ID
+app.get('/stock/:id', (req, res) => {
+    const { id } = req.params;
+    const query = 'SELECT * FROM stock WHERE id = $1';
+    db.query(query, [id], (err, result) => {
+        if (err) {
+            console.error('Error executing query:', err);
+            res.status(500).json({ error: 'Error fetching item from stock' });
+        } else {
+            if (result.rows.length === 0) {
+                res.status(404).json({ error: 'Item not found in stock' });
+            } else {
+                res.status(200).json(result.rows[0]);
+            }
+        }
+    });
+});
+
+// Endpoint to update an item in the stock by ID
+app.put('/stock/:id', (req, res) => {
+    const { id } = req.params;
+    const { productid, name, cost, category, supplier_name } = req.body;
+    const query = 'UPDATE stock SET productid = $1, name = $2, cost = $3, category = $4, supplier_name = $5 WHERE id = $6 RETURNING *';
+    db.query(query, [productid, name, cost, category, supplier_name, id], (err, result) => {
+        if (err) {
+            console.error('Error executing query:', err);
+            res.status(500).json({ error: 'Error updating item in stock' });
+        } else {
+            if (result.rows.length === 0) {
+                res.status(404).json({ error: 'Item not found in stock' });
+            } else {
+                res.status(200).json(result.rows[0]);
+            }
+        }
+    });
+});
+
+// Endpoint to delete an item from the stock by ID
+app.delete('/stock/:id', (req, res) => {
+    const { id } = req.params;
+    const query = 'DELETE FROM stock WHERE id = $1';
+    db.query(query, [id], (err, result) => {
+        if (err) {
+            console.error('Error executing query:', err);
+            res.status(500).json({ error: 'Error deleting item from stock' });
+        } else {
+            if (result.rowCount === 0) {
+                res.status(404).json({ error: 'Item not found in stock' });
+            } else {
+                res.status(200).json({ message: 'Item deleted successfully' });
+            }
+        }
+    });
+});
+
 
 // Start server
 app.listen(PORT, () => {
