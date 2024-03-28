@@ -1,77 +1,125 @@
-import pg from 'pg';
 import express from 'express';
-import cors from 'cors';
 import bodyParser from 'body-parser';
+import pg from 'pg';
+import cors from 'cors';
 
 const app = express();
-app.use(cors());
-app.use(bodyParser.json());
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 
+// PostgreSQL configuration
 const db = new pg.Client({
     user: 'postgres',
     host: 'localhost',
-    database: 'inventory',
+    database: 'optiforecast', // Change this to your database name
     password: 'root',
     port: 5432,
 });
 
+// Connect to PostgreSQL database
+db.connect(err => {
+    if (err) {
+        console.error('Error connecting to PostgreSQL:', err);
+    } else {
+        console.log('Connected to PostgreSQL database');
+    }
+});
 
-// CRUD operations for Inventory table
-const getInventory = (request, response) => {
-    db.query('SELECT * FROM Inventory', (error, results) => {
-        if (error) {
-            throw error;
+// Middleware
+app.use(cors());
+app.use(bodyParser.json());
+
+// Routes
+app.get('/', (req, res) => {
+    res.send('Welcome to the Optiforecast API');
+});
+
+// Endpoint to create a new employee
+app.post('/employee', (req, res) => {
+    const { name, position, access, contact } = req.body;
+    const query = 'INSERT INTO employee (name, position, access, contact) VALUES ($1, $2, $3, $4) RETURNING *';
+    db.query(query, [name, position, access, contact], (err, result) => {
+        if (err) {
+            console.error('Error executing query:', err);
+            res.status(500).json({ error: 'Error creating employee' });
+        } else {
+            res.status(201).json(result.rows[0]);
         }
-        response.status(200).json(results.rows);
     });
-};
+});
 
-const getInventoryById = (request, response) => {
-    const id = parseInt(request.params.id);
-
-    db.query('SELECT * FROM Inventory WHERE id = $1', [id], (error, results) => {
-        if (error) {
-            throw error;
+// Endpoint to create a new supplier
+app.post('/supplier', (req, res) => {
+    const { name, address, category, contact } = req.body;
+    const query = 'INSERT INTO supplier (name, address, category, contact) VALUES ($1, $2, $3, $4) RETURNING *';
+    db.query(query, [name, address, category, contact], (err, result) => {
+        if (err) {
+            console.error('Error executing query:', err);
+            res.status(500).json({ error: 'Error creating supplier' });
+        } else {
+            res.status(201).json(result.rows[0]);
         }
-        response.status(200).json(results.rows);
     });
-}
+});
 
-const createInventory = (request, response) => {
-    const { product, quantity } = request.body;
-
-    db.query('INSERT INTO Inventory (product, quantity) VALUES ($1, $2)', [product, quantity], (error, results) => {
-        if (error) {
-            throw error;
+// Endpoint to delete an employee by ID
+app.delete('/employee/:id', (req, res) => {
+    const { id } = req.params;
+    const query = 'DELETE FROM employee WHERE id = $1';
+    db.query(query, [id], (err, result) => {
+        if (err) {
+            console.error('Error executing query:', err);
+            res.status(500).json({ error: 'Error deleting employee' });
+        } else {
+            res.status(200).json({ message: 'Employee deleted successfully' });
         }
-        response.status(201).send(`Inventory added with ID: ${results.insertId}`);
     });
-}
+});
 
-const updateInventory = (request, response) => {
-    const id = parseInt(request.params.id);
-    const { product, quantity } = request.body;
-
-    db.query('UPDATE Inventory SET product = $1, quantity = $2 WHERE id = $3', [product, quantity, id], (error, results) => {
-        if (error) {
-            throw error;
+// Endpoint to delete a supplier by ID
+app.delete('/supplier/:id', (req, res) => {
+    const { id } = req.params;
+    const query = 'DELETE FROM supplier WHERE id = $1';
+    db.query(query, [id], (err, result) => {
+        if (err) {
+            console.error('Error executing query:', err);
+            res.status(500).json({ error: 'Error deleting supplier' });
+        } else {
+            res.status(200).json({ message: 'Supplier deleted successfully' });
         }
-        response.status(200).send(`Inventory modified with ID: ${id}`);
     });
-}
+});
 
-const deleteInventory = (request, response) => {
-    const id = parseInt(request.params.id);
-
-    db.query('DELETE FROM Inventory WHERE id = $1', [id], (error, results) => {
-        if (error) {
-            throw error;
+// Endpoint to update an employee by ID
+app.put('/employee/:id', (req, res) => {
+    const { id } = req.params;
+    const { name, position, access, contact } = req.body;
+    const query = 'UPDATE employee SET name = $1, position = $2, access = $3, contact = $4 WHERE id = $5 RETURNING *';
+    db.query(query, [name, position, access, contact, id], (err, result) => {
+        if (err) {
+            console.error('Error executing query:', err);
+            res.status(500).json({ error: 'Error updating employee' });
+        } else {
+            res.status(200).json(result.rows[0]);
         }
-        response.status(200).send(`Inventory deleted with ID: ${id}`);
     });
-}
+});
 
+// Endpoint to update a supplier by ID
+app.put('/supplier/:id', (req, res) => {
+    const { id } = req.params;
+    const { name, address, category, contact } = req.body;
+    const query = 'UPDATE supplier SET name = $1, address = $2, category = $3, contact = $4 WHERE id = $5 RETURNING *';
+    db.query(query, [name, address, category, contact, id], (err, result) => {
+        if (err) {
+            console.error('Error executing query:', err);
+            res.status(500).json({ error: 'Error updating supplier' });
+        } else {
+            res.status(200).json(result.rows[0]);
+        }
+    });
+});
+
+// Start server
 app.listen(PORT, () => {
-    console.log(`Server is running at http://localhost:${PORT}`)
-})
+    console.log(`Server is running on port ${PORT}`);
+});
