@@ -36,6 +36,7 @@ app.get('/', (req, res) => {
 // Endpoint to create a new employee
 app.post('/employee', (req, res) => {
     const { name, position, access, contact } = req.body;
+    console.log('Received employee data:', { name, position, access, contact }); // Log received data
     const query = 'INSERT INTO employee (name, position, access, contact) VALUES ($1, $2, $3, $4) RETURNING *';
     db.query(query, [name, position, access, contact], (err, result) => {
         if (err) {
@@ -46,6 +47,7 @@ app.post('/employee', (req, res) => {
         }
     });
 });
+
 
 // Endpoint to create a new supplier
 app.post('/supplier', (req, res) => {
@@ -70,10 +72,12 @@ app.delete('/employee/:id', (req, res) => {
             console.error('Error executing query:', err);
             res.status(500).json({ error: 'Error deleting employee' });
         } else {
+            console.log(`Employee with ID ${id} deleted successfully`); // Add this log statement
             res.status(200).json({ message: 'Employee deleted successfully' });
         }
     });
 });
+
 
 // Endpoint to delete a supplier by ID
 app.delete('/supplier/:id', (req, res) => {
@@ -118,6 +122,19 @@ app.put('/supplier/:id', (req, res) => {
         }
     });
 });
+
+app.get('/employee', (req, res) => {
+    const query = 'SELECT * FROM employee';
+    db.query(query, (err, result) => {
+        if (err) {
+            console.error('Error executing query:', err);
+            res.status(500).json({ error: 'Error fetching employees' });
+        } else {
+            res.status(200).json(result.rows);
+        }
+    });
+}
+);
 
 // Start server
 app.listen(PORT, () => {
